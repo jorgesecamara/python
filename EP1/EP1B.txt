@@ -1,0 +1,78 @@
+
+1. Introdução
+
+A testagem linear 1:1 é precisa porém extremamente custosa e impraticável em larga escala. Cada teste RT-PCR, por exemplo, requer pessoal treinado para a coleta de material e da manipulação dos equipamentos e o emprego de reagentes caros. Estima-se por exemplo que a aplicação de cada kit de testagem do tipo mais confiáveis custe pouco mais de R$40,00 atualmente. Para viabilizar uma testagem em massa, é necessária portanto uma estratégia de testagem mais economicamente eficiente. Felizmente, é possível diminuir o custo de testagem de uma grande população de indivíduos cuja prevalência da doença seja relativamente baixa através da testagem agrupada (mais comumente chamada de testagem em pool). Tal testagem consiste em realizar um único teste RT-PCR com as amostras "misturadas" do material coletado de um grupo (pool) de indivíduos em única solução. Como o teste detecta a presença de RNA do vírus com alta sensibilidade, o teste com as  amostras agrupadas nos permite distinguir entre dois casos:
+
+    O teste resulta em negativo, indicando que todos os indivíduos que contribuíram para amostra testada estão provavelmente livres da infeção.
+    O teste resulta em positivo, indicando que há pelo menos 1 indivíduo infectado e novas coletas de amostras e testagem dos indivíduos da amostra são necessários.
+
+
+2. Amostragem por pooling
+
+Sua segunda tarefa nesse projeto será implementar uma estratégia de testagem agrupada que limite o número de kits de testagem utilizados. Para os fins desse projeto, vamos continuar assumindo que temos acesso a um oráculo que nos diz com exatidão se um grupo de indivíduos possui ao menos um indivíduo infectado ou não. Em outras palavras, assumiremos que o teste agrupado é perfeito, e que não há outros erros introduzidos pela testagem múltipla de indivíduos. O oráculo é acessado por meio da função infectados_em(i, j), que toma como argumentos dois inteiros i
+e j especificando que o teste deve ser realizado nos indivíduos identificados pelos inteiros de i a j−1, ou seja, no bloco contíguo i,i+1,…,j−1
+
+. Por exemplo, para testar os indivíduos identificados pelos inteiros 2, 3 e 4 usamos a chamada infectados_em(2, 5). Cada chamada para essa função indica que um kit de testagem será usado para tal grupo de pessoas. 
+
+Observação: Na realidade, a especificidade e sensibilidade do teste diminuem quando realizados em uma amostra agrupada conforme o número de amostras combinadas, portanto uma estratégia eficaz deve considerar tais efeitos para determinar o tamanho máximo de amostras combinadas.
+
+3. Testagem por particionamento recursivo
+
+
+Inspirados na busca binária, iremos implementar uma técnica de amostragem em grupo que consiste em repetidamente dividir pela metade um grupo contíguo de indivíduos até que uma das condições abaixo sejam verdadeiras:
+
+    O teste no subgrupo resulta em negativo, ou
+    O subgrupo contém um único indivíduo e o resultado do teste é positivo.  
+
+Por exemplo, suponha que temos uma população de N=10
+
+indivíduos com os seguintes estado epidemiológicos (representado usando o protocolo de resposta descrito na tarefa anterior), desconhecidos para nós:
+
+1000100100
+Ou seja, os indivíduos 0, 4 e 7 são os únicos infectados. O algoritmo inicia testando a população inteira com a função infectados_em(0, 10), que para esse exemplo  devolve o valor True. Como nesse momento nenhuma das condições é verdadeira, particionamos os indivíduos em dois grupos contíguos de igual tamanho:
+
+    Grupo A, contendo indivíduos 0-4;
+    Grupo B, contendo indivíduos 5-9.
+
+Repetimos o procedimento, testando apenas os indivíduos do grupo A com infectados_em(0, 5), que devolve o valor True. Como nenhuma das condições 1 e 2 são satisfeitas, repetimos mais uma vez o procedimento. Testamos o grupo 0-2 com a chamada infectados_em(0, 3), que devolve o valor True. Repetimos novamente o procedimento, gerando o grupo contendo os indivíduos 0 e 1, os testamos com infectados_em(0, 2), que devolve o valor True. Mais uma vez repetimos o procedimento gerando o grupo contendo apenas um indivíduo 0, que portanto pode ser declarado infectado. Nesse momento o grupo de indivíduos com estado epidemiológico desconhecido é formado pelos indivíduos 1 a 9. Reiniciamos o procedimento testando os indivíduos de 1 a 9 com infectados_em(1, 10), que devolve  True. Testamos portanto o subgrupo os contendo indivíduos 1-5 com infectados_em(1, 6), que também devolve  True.  Testamos a primeira metade desse grupo usando infectados_em(1, 4), que devolve False. Dessa forma, sabemos que tais indivíduos não são infectados e podemos reiniciar o procedimento testando o grupo de indivíduos 5-9. Esse processo se repete até que o estado de todos os indivíduos seja conhecido. A execução completa do procedimento descrito pode ser representada da seguinte forma:
+
+[1000100100]
+[10001]00100
+[100]0100100
+[10]00100100
+[1]000100100 (condição 2)
+1[000100100]
+1[00010]0100
+1[000]100100 (condição 1)
+1000[100100]
+1000[100]100
+1000[10]0100
+1000[1]00100 (condição 2)
+10001[00100]
+10001[001]00
+10001[00]100 (condição 1)
+1000100[100]
+1000100[10]0
+1000100[1]00 (condição 2)
+10001001[00] (condição 1)
+
+Alguns exemplos de casos extremos do algoritmo:
+
+Exemplo 1. Considere a população A=(0,0,…,0)
+
+, ou seja, ninguém está infectado. Seu programa deve identificar os estados dos indivíduos usando apenas 1 kit de testagem.
+
+Exemplo 2. Considere a população A=(1,1,…,1,0,0,…,0)
+
+, cuja primeira metade contem apenas indivíduos infectados e cuja segunda metade contém apenas indivíduos não infectados. Nesse caso, o seu programa utiliza um número de kits de testagem maior que o número de indivíduos.
+
+4. Submetendo o resultado 
+
+Assim como na primeira tarefa, você usar a função envia(resposta) para submeter os resultados do estado epidemiológico de cada indivíduo na forma de um inteiro com o mesmo protocolo descrito lá.
+5. Correção e bônus
+
+Seu programa deve usar apenas os conceitos vistos em sala de aula e não deve usar listas nem strings para representar os estados dos indivíduos. Como os exemplos acima mostram, o algoritmo descrito pode ser ineficiente em muitas situações. As soluções corretas que utilizarem o menor número de testes em um conjunto de instâncias sigiloso (conhecido por nós durante a correção), receberão um acréscimo de 1 ponto na nota geral do projeto.
+
+Novamente, não se esqueçam que a discussão é saudável, o plágio não. NUNCA compartilhe código!
+
+Bom trabalho!

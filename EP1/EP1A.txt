@@ -1,0 +1,34 @@
+1. Introdução
+
+Uma das maneiras mais efetivas de controle de uma epidemia é a detecção rápida e o isolamento de indivíduos infectados. No contexto atual da pandemia de COVID-19, a forma mais confiável de se detectar o SARS-CoV-2 é por meio do teste RT-PCR (do inglês Reverse Transcription-Polymerase Chain Reaction), que identifica o RNA do vírus da doença com alta precisão.
+
+Nesse primeiro projeto, você será responsável por implementar a estratégia de testagem de uma população e realizar o processamento dos resultados, submetendo-o conforme o protocolo do sistema informatizado. Seu principal desafio é desenvolver métodos eficientes que identifiquem o maior número de indivíduos infectados, com o menor custo econômico. 
+
+2. Amostragem caso a caso
+
+O tipo de testagem mais comum e menos eficiente economicamente é o chamado linear 1:1. Neste procedimento, cada kit de testagem é utilizado em apenas uma pessoa. Sua primeira tarefa será escrever um programa que identifica os indivíduos infectados testando-os 1 a 1.  Para isso, vamos assumir acesso a um oráculo  que, quando questionado, identifica corretamente o estado de um indivíduo. Isto é, vamos assumir que o teste é perfeito, ou seja, que o teste nunca diz que alguém que está contaminado quando não está (falso-positivo), ou que não está contaminado quando está (falso-negativo).
+
+Observação: Na realidade, o teste por RT-PCR tem erro de até 67% para falso-negativo [Kucirka et al, 2020] e de até 6,3% para falso-positivos [Cohen et al, 2020]. Para reflexão, no contexto do COVID-19, qual erro (falso-positivo ou falso-negativo) você acha que é mais importante que seja menor?
+
+O nosso oráculo será simulado pela função infectado(i), que recebe um inteiro como argumento e determina se o indivíduo identificado pelo inteiro i
+está infectado ou não. Cada chamada para essa função consome um  kit de testagem (esse fato será relevante nas próximas tarefas, mas por ora pode ser desconsiderado). Cada vez que seu programa é executado, é simulada uma população de N indivíduos cujos estados epidemiológicos (infectado ou não infectado) só podem ser conhecidos através da testagem. Cada indivíduo é unicamente identificado por um inteiro entre 0 e N−1. O número total de indivíduos N pode ser obtido chamando a função num_individuos(). Note que o número de indivíduos é fornecido através dessa função e não pelo usuário através da função input. 
+
+Depois de determinar o estado epidemiológico de cada indivíduo da população, você deve submeter os resultados para o sistema geral usando a função  envia(resposta), que recebe um inteiro cuja representação em notação binária é  d[0]d[1]d[2]...d[N-1] com o dígito d[i] sendo 1 se o resultado do teste para o indivíduo identificado por i for positivo (True) e 0 caso contrário. Por exemplo, suponha que temos uma população de N=5
+
+indivíduos com os seguintes estados epidemiológicos:
+
+    Infectados: 0, 2 e 3;
+    Não infectados: 1 e 4.
+
+O argumento da função envia deve então ser o inteiro 16+4+2=22
+
+, que em binário é escrito como 10110. Note que o digíto d[0] é o mais significativo e o dígito d[N-1] é o menos significativo.
+
+O sistema que recebe o resultado dos testes permite que seu programa realize apenas uma submissão através da função envia, e ignora submissões (chamadas) adicionais. O esqueleto do código fornecido indica a organização esperada da sua solução. 
+3. Avaliação
+
+
+Apenas o resultado submetido pela função envia será considerado para fins de avaliação. As mensagens geradas pelo seu programa são portanto ignoradas (você pode usá-las para ajudar na depuração do seu código ou para deixá-lo mais amigável).  Para essa etapa, sua solução deve necessariamente testar todos os indivíduos. Você pode verificar quantos testes foram realizados pelo seu programa chamando a função num_testes(). Você pode avaliar sua solução quantas vezes quiser dentro do prazo de entrega, porém a nota final considerada será a da última avaliação realizada. 
+Não se esqueçam de que a discussão é saudável, o plágio não. Você podem discutir ideias de solução e dúvidas quanto ao enunciados com colegas, porém não deve compartilhar trechos de código, nem discutir sua solução em detalhes. 
+
+Bom trabalho! :)

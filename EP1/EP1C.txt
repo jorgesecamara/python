@@ -1,0 +1,82 @@
+1. Introdução
+
+Como vimos na Parte B desse projeto, quando a proporção de indivíduos infectados é pequena podemos identificá-los mais eficientemente (ou seja, usando menos testes) através de técnicas mais sofisticadas. A eficiência da técnica sugerida na Parte B, no entanto, é altamente dependente da ordem em que os indivíduos infectados são apresentados, e pode resultar em um número maior que a testagem linear.
+
+Nesta Parte C do projeto, vamos implementar técnica chamada de testagem por reticulado, que alivia algumas das ineficiências da testagem da parte B. 
+
+2. Testando subgrupos diversos
+
+Nas partes anteriores do EP, assumimos que nosso oráculo aceitava apenas um intervalo de indivíduos. Nessa parte, vamos permitir que nosso oráculo infectados_em(S) receba uma lista S com as identificações dos indivíduos, essas sendo inteiros entre 0 e num_individuos()-1, como antes. Por exemplo, suponha que temos um grupo de 5 indivíduos, cujos infectados são identificados como 0, 2 e 3. A chamada função infectados_em([0,2,4]) portanto devolve o valor  True, enquanto que a chamada infectados_em([1,4]) devolve o valor  False. Note como a lista  S contém subconjuntos arbitrários das identificações dos indivíduos.
+
+O esqueleto do código fornecido implementa a função linear(P), que conduz uma testagem linear 1:1 nos indivíduos identificados na lista de índices P. Ou seja, tal função executa um número de testes igual ao tamanho da lista  P, e será útil como sub-etapa da solução mais eficiente que desenvolveremos. Sua primeira tarefa é familiarizar-se com o código da função linear(P), e implementar a função main, para que ela resolva o problema usando uma testagem linear 1:1. Se sua solução estiver correta, ao executar o avaliador você observará apenas mensagens de erros devido ao número excessivo de testes realizados (vamos consertar isso a seguir).
+
+3. Testagem em reticulado 2D
+
+Vamos agora descrever a testagem por reticulado 2D. Para simplificar a notação, assuma que n
+é o número de indivíduos, devolvido por num_individuos(). Sejam a e b inteiros tais que n=a×b. O método consiste em organizar os indivíduos (conceitualmente, apenas) em um reticulado (matriz) de tamanho a-por-b
+. Em seguida, testamos cada grupo de indivíduos dispostos numa mesma linha ou coluna do reticulado.  A intersecção dos grupos de linhas e colunas cujos testes retornaram positivos formam os casos suspeitos, que devem então ser reanalisados através da testagem linear. Colocado de outra forma: um indivíduo é suspeito se e somente se tanto sua linha quanto sua coluna testaram positivos. Os demais indivíduos estão garantidamente não-infectados.
+
+Como exemplo, considere uma população com n=5×6=30
+que queremos testar. Organizamos os índices dos indivíduos como na matriz abaixo, onde os  elementos f(i,j) correspondem a inteiros entre 0  e n−1
+identificando os indivíduos. 
+
+Matriz com cada paciente.
+
+A seguir testamos cada grupo de indivíduos em uma linha da matriz, e cada grupo em uma coluna, e anotamos os resultados dos testes. Suponha que apenas as linhas 2 e 4 e as colunas 2 e 4 testaram positivo. Isso indica que f(2,2),f(4,2),f(2,4),f(4,4)
+são os casos suspeitos . Para identificar os infectados, fazemos uma testagem linear nesse grupo de indivíduos por meio da função linear(P) , e enviamos os índices dos infectados em P. 
+
+4. Especificando as dimensões
+
+A eficiência da testagem em reticulado depende da escolha das dimensões a
+e b, já que o número de kits de testagem usados é pelo menos a+b. Para o exemplo acima usamos 11 testes para testar os subgrupos nas linhas e colunas e 4 testes para testar os casos suspeitos, resultando em um número de testes bem inferior aos 30 testes necessários por uma testagem linear na população completa.  Se ao invés tivéssemos usados a=1 e b=n=30
+, teríamos realizados 31 testes. 
+
+Implemente a função dimensoes(n), que toma um inteiro positivo n
+representando o número de indivíduos na população e devolve dois inteiros positivos a e b
+tais que:
+
+    a≤b
+
+n=a×b
+a+b
+é mínimo, ou seja, para quaisquer inteiros positivos i e j com i×j=n temos que a+b≤i+j
+
+    .
+
+Colocado de outra forma, a função dimensoes(n) devolve uma fatoração de n
+em dois inteiros positivos cuja soma é mínima.
+
+5. Organizando o reticulado
+
+A princípio, qualquer organização dos indivíduos em uma matriz a
+por b é suficiente para realizar a testagem em reticulado. Assumiremos aqui uma abordagem simples que organiza os indivíduos em ordem crescente de seus índices. Ou seja, os indivíduos são organizados em uma matriz cujo elemento na posição i,j é o índice i×b+j
+. 
+
+Implemente a função cria_reticulado que recebe as dimensões a
+e b e devolve a matriz a por b cujos elementos são os índices dos indivíduos em ordem crescente. Por exemplo, para a=2 e b=3
+, a função deve devolver a matriz
+
+[[0, 1, 2], [3, 4, 5]].
+
+Curiosidade: uma maneira de tornar a técnica mais eficiente para populações grandes de indivíduos é repetir as testagem em reticulado com organizações distintas dos indivíduos em matrizes de mesmo tamanho. Dessa forma, um indivíduo é suspeito se e somente se ele é suspeito em todas as realizações da testagem em reticulado, o que diminui o conjunto de suspeitos a serem testados pela testagem linear. Se executarmos uma quantidade suficiente de testagens em reticulado, com alta probabilidade identificamos como suspeitos exatamente o grupo de infectados. Esse é um exemplo de algoritmo probabilístico, isto é, um algoritmo que produz resultados distintos cada vez que é executado (no nosso caso, o comportamento probabilístico refere-se apenas as testagens em reticulados sem a etapa final de testagem linear). 
+
+6. Selecionando os subgrupos
+
+A última etapa antes de conseguirmos realizar a testagem em reticulado é extrair os subgrupos de indivíduos formados pelas linhas e colunas da matriz descrita. Para isso, implemente as funções extrai_linha(M, i), que retorna a i-ésima linha da matriz M, e extrai_coluna(M, j), que faz o mesmo para as colunas. Ambas as funções devolvem uma lista de inteiros entre 0
+e n−1
+.
+
+7. Identificando os suspeitos
+
+Temos agoras todos os ingredientes necessários para resolver a testagem por reticulado 2D. Implemente a função teste_reticulado_2d(M) que recebe uma matriz M contendo os índices dos indivíduos e devolve uma lista contendo os índices dos indivíduos suspeitos. Sua função deve testar cada cada linha e coluna como descrito usando a função infectados_em(L)  e combinar os resultados para gerar a lista de suspeitos. 
+
+8. Identificando os infectados
+
+A etapa final da técnica consiste em realizar uma testagem linear sobre os indivíduos suspeitos para encontrar os infectados. Implemente na função main(), sua solução de testagem em reticulado 2D combinando todas as funções desenvolvidas anteriormente, ou seja, encontre as dimensões do reticulado, construa a matriz de índices crescentes, realize as testagens nas linhas e colunas da matriz para identificar os suspeitos e obtenha os infectados por meio de uma testagem linear dos suspeitos usando a função linear(P). Para divulgar os resultados, você deve chamar a função envia(I) com a lista de infectados I.
+
+Observação: nas partes anteriores, a função envia  recebia um inteiro representando os estados de todos os indivíduos. Nessa parte, a função  envia  recebe uma lista dos infectados e assume que os índices ausentes referem aos indivíduos não-infectados.
+
+9. Avaliação
+
+
+Como nas partes anteriores você pode avaliar sua solução quantas vezes quiser. A nota da avaliação depende da implementação correta de todas as funções descritas aqui. Em particular, seu programa deve identificar corretamente os indivíduos infectados utilizando o menor número de testes possíveis para uma testagem em reticulado como descrita.

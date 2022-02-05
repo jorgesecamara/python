@@ -1,0 +1,234 @@
+1. Motivação
+
+Kami é um videojogo de quebra-cabeça no qual a jogadora pinta regiões de uma figura usando um conjunto finito de cores a fim de torná-la monocromática sem ultrapassar o número máximo de ações. A figura abaixo exemplifica o jogo para uma imagem com 3 cores e limite máximo 4 ações de pintar.
+
+
+Sua tarefa nesse projeto será implementar uma versão simples do jogo em modo texto, ou seja, exibindo o tabuleiro no terminal. Entre outros requisitos, você deve implementar funções de leitura e escrita de arquivos de texto, o algoritmo de pintar regiões a partir de um ponto, e implementar o mecanismo das regras do jogo. Por fim, você deve implementar também um agente inteligente que resolve o quebra-cabeça de forma automática usando busca com retrocesso e teoria dos grafos.
+2. Representação
+
+Na nossa versão do jogo, o tabuleiro será representado por uma matriz de tamanho M
+-por-N contendo inteiros não negativos. O tabuleiro consiste de uma região útil central de tamanho (M−2)-por-(N−2)
+
+envolta por uma moldura, composta de células de valor 0.  O exemplo abaixo mostra a matriz 7-por-7 representando um tabuleiro 5-por-5 com 3 cores distintas:
+
+  0  0  0  0  0  0  0 
+  0  1  1  1  2  2  0 
+  0  1  1  2  2  2  0 
+  0  3  3  1  1  1  0 
+  0  3  3  1  1  1  0 
+  0  1  1  3  3  3  0 
+  0  0  0  0  0  0  0 
+
+Para facilitar o seu trabalho, nós disponibilizamos dentro do módulo util.py a implementação da função exibe_tabuleiro, que recebe uma matriz representando o tabuleiro do jogo como descrito e produz uma representação textual colorida como no exemplo abaixo. Para usar a função é necessário importá-la, o que é feito pelo comando:
+
+from util import exibe_tabuleiro
+
+Este comando já está presente no topo do arquivo inicial ep.py e não deve ser alterado (com essa sintaxe não é necessário prefixar com nome do módulo as chamadas da função). Embora não seja relevante para o restante da implementação, cada inteiro de  1 a 7 na matriz é exibido com uma cor distinta pela função. Vamos assumir portanto que esse é o número máximo de cores distintas em um tabuleiro. O tabuleiro acima é exibido da seguinte forma pela função:
+
+
+Note os inteiros e letras rotulando linhas e colunas da região útil do tabuleiro. Vamos usar esse formato para nos referimos às posições, como explicado mais adiante.
+  
+O problema do tabuleiro acima pode ser resolvido em 3 ações, primeiro pintando a região verde de vermelho, em seguida pintando a região vermelha da célula A5 de amarelo, e por fim pintando a única região amarela restante de vermelho. Note que essa solução não é única. Por exemplo, poderíamos resolver o problema pintando a região verde de vermelho, em seguida pintando a região vermelha da célula E1 de amarelo e por fim pintando a região amarela de vermelho. Há ainda outras variantes de solução para esse problema.
+
+Importante: Infelizmente, exibir texto em cores não é uma tarefa simples e depende de parâmetros como sistema operacional, terminal e versão do interpretador.  A implementação da função exibe_tabuleiro que disponibilizamos funciona apenas em sistemas Linux e Mac OS, como o que roda no ambiente do e-disciplinas. Em sistemas  rodando Windows, é possível que essa função não funcione e que ao executar seu programa você receba alguma mensagem de erro ou que o tabuleiro não seja exibido corretamente. Por causa disso, fornecemos também no módulo util.py a função exibe_tabuleiro_sem_cores, que como o nome sugere exibe o tabuleiro sem cores, e deve funcionar em qualquer sistema operacional. Dessa forma, caso queira executar o programa nos eu computador e encontrar problemas com a exibição do tabuleiro, você pode usar a versão de exibição sem cores. Se fizer isso, lembre-se no entanto de trocar para a função exibe_tabuleiro quando for submeter a versão final do seu código no e-disciplinas (VPL).
+3. Ler tabuleiro
+
+Sua primeira tarefa é implementar a função carrega_tabuleiro(nome), que recebe o nome de um arquivo de texto contendo uma representação do tabuleiro e devolve as informações do nível de dificuldade, quantidade de ações e cores e a matriz do tabuleiro. A primeira linha do arquivo contém o cabeçalho formado pelo grau de dificuldade do tabuleiro (1 para fácil, 2 para médio, 3 para difícil), o número máximo de ações, o número de linhas M−2
+e colunas N−2 e o número de cores disponíveis. As linhas seguintes contêm as linhas da matriz (M−2)-por-(N−2)
+
+representando a região útil da matriz. Vamos assumir que as cores são sempre representadas por inteiros maiores ou iguais a 1. Note que o tabuleiro pode conter menos ou mais cores que o número de cores disponíveis.  Por exemplo, o arquivo de texto de nome tab01.txt cujo conteúdo é 
+
+1 3 5 5 3
+1 1 1 2 2
+1 1 2 2 2
+3 3 1 1 1
+3 3 1 1 1
+1 1 3 3 3
+
+representa o tabuleiro exibido abaixo, de grau de dificuldade fácil, que deve ser resolvido com até 3 ações, possui uma região útil de tamanho 5-por-5 e 3 cores disponíveis (representadas pelos inteiros 1, 2 e 3). 
+
+
+
+A sua implementação da função deve, nesse caso, devolver a dificuldade (1), o número máximo de ações (3), o número de cores disponíveis (3) e a matriz de inteiros:
+
+[[0, 0, 0, 0, 0, 0, 0],
+ [0, 1, 1, 1, 2, 2, 0],
+ [0, 1, 1, 2, 2, 2, 0],
+ [0, 3, 3, 1, 1, 1, 0],
+ [0, 3, 3, 1, 1, 1, 0],
+ [0, 1, 1, 3, 3, 3, 0],
+ [0, 0, 0, 0, 0, 0, 0]]
+
+Note que a matriz contém a moldura representada por células de valor 0. Note também que a função não deve devolver o tamanho da matriz, que pode ser inferido posteriormente a partir da própria representação da matriz.
+
+Para fins de testes, disponibilizamos os tabuleiros tab00.txt, tab01.txt, tab02.txt, tab03.txt e tab04.txt, que podem ser acessados da mesma forma que um arquivo normal em seu computador.
+4. Pintar região
+
+Em seguida, você deve implementar a função pinta, que preenche uma região com uma dada cor a partir de uma célula inicial usando a analogia de um incêndio se propagando em um gramado. Inicialmente, o algoritmo marca a célula inicial dada como queimando, representado pelo inteiro -1 (para que se diferencie dos outros valores da matriz). O algoritmo então repete o seguinte procedimento até que não haja mais células queimando. A cada iteração, o algoritmo encontra uma célula queimando, altera seu estado para queimado e altera o valor das células adjacentes de mesma cor localizadas acima, abaixo, à esquerda e à direita para queimando (-1). A célula queimada é "pintada" com a cor desejada. Ao término do processo teremos pintado todas as células da região desejada com a cor fornecida.
+
+Como exemplo, suponha que queremos pintar a região verde (representada pelo inteiro 2) na figura abaixo de amarelo (representada pelo inteiro 3) a partir da célula E1.
+
+
+Vamos chamar o conjunto de células queimando em uma dada iteração do algoritmo de fronteira e vamos representá-las visualmente pela letra F (embora internamente elas sejam representadas pelo inteiro -1 na matriz).  Primeiramente, o algoritmo marca a célula E1 como fronteira/queimando, produzindo a configuração da figura abaixo.
+
+
+A seguir, o algoritmo altera o valor dos vizinhos de mesma cor de E1 como queimando (valor -1) e altera o valor de E1 para a cor desejada (3 nesse exemplo):
+
+
+Note como a utilização da moldura facilita a varredura de vizinhos de mesma cor, evitando que células da borda da região útil necessitem de tratamento diverso de células interiores. As células queimando constituem a nova fronteira, e o o procedimento se repete. Por exemplo, podemos selecionar D1, marcá-la como queimado e alterar seus vizinhos D2 e E2 para queimando. Note que não colocamos E1 novamente na fronteira, pois nesse momento ela possui uma cor distinta da região inicial. Podemos então selecionar a célula D2 e expandí-la (inserindo a célula C2 na fronteira); depois selecionar a célula E2 e expandí-la (que nesse momento não possui células adjacentes de mesma cor) e por fim selecionar a célula C2 e pintá-la de amarelo (3), fazendo com que a região inicialmente verde se torne completamente amarela. Essa sequência de iterações é ilustrada nas figuras abaixo:
+
+
+Sua implementação deve tratar de um caso especial: quando a célula inicial já é da cor dada, o algoritmo pode entrar em um laço infinito (por que?). Para prevenir isso, seu algoritmo deve verificar tal condição e simplesmente interromper a execução da função sem modificar o tabuleiro.
+
+5. Verificando o final de jogo
+
+A função verifica_fim(tabuleiro) detecta se o jogo terminou. Ela recebe um tabuleiro de jogo com moldura e deve retornar True caso o tabuleiro esteja colorido com uma única cor ou  False caso contrário.
+
+6. Jogador automático
+
+A função dica encontra uma ação válida (se houver) ou constata que não há mais ações válidas que resolvam o problema. Ela recebe a matriz do tabuleiro e o número de ações restantes e devolve uma localização e uma cor para pintar uma região. Para tanto, ela deve chamar a função busca, que executa uma busca com retrocesso para encontrar uma ação que, se executada, pode resultar na resolução do problema dentro do número máximo de ações restantes. Para tornar a implementação mais eficiente, a função busca deve usar um grafo para representar o tabuleiro e simular modificações a fim de encontrar uma sequência de ações que resolva o problema (ou seja, que torna o tabuleiro monocromático). Para entendermos melhor como faremos tal busca, vamos primeiro rever alguns conceitos sobre grafos e como podemos representá-los em Python.
+6.1 Grafos
+
+Chamamos de grafo um objeto matemático G=(V,E)
+que contém dois tipos de sub-objetos: um conjunto de vértices V, também chamados de nós, e um conjunto de pares não ordenados de vértices E, chamados de arestas ou arcos. Os vértices são visualmente representados como pontos no espaço e as arestas são desenhadas como linhas conectando os vértices. Note no entanto que tal representação visual é puramente ilustrativa e que a disposição espacial de vértices e arestas é um tanto arbitrária. Na imagem abaixo, ilustramos o grafo G=({0,1,2,3},{01¯¯¯¯¯,12¯¯¯¯¯,13¯¯¯¯¯})
+
+:
+
+ 
+
+Seja um vértice qualquer u
+, dizemos que os vizinhos de u são todos os vértices que estão conectados a u
+
+por uma aresta. Por exemplo, no grafo da imagem acima os vizinhos de 1 são 0, 2 e 3; já o vértice 2 possui apenas o vértice 1 como vizinho.
+6.2 Representando grafos
+Existem várias formas de se representar um grafo computacionalmente. Neste projeto, vamos utilizar uma forma comum, chamada de dicionário de adjacência. 
+Nessa forma, um grafo é representado por um dicionário cujas chaves são os vértices. Cada chave é associada a um conjunto contendo os vizinhos do vértice correspondente.  Os conjuntos são representados por objetos do tipo set que possuem operações de conjuntos como união, remoção e interseção. Objetos do tipo set são especificados usando a sintaxe
+
+{item1, item2, item3, ..., itemN}
+Note como a sintaxe se assemelha a um dicionário exceto pela presença de valores associados (ou seja, sem a divisão chave: valor). De fato, pode-se pensar em um objeto do tipo set como um dicionário cujas chaves são todas associadas ao mesmo valor, que portanto não precisa ser representado. Você não vai precisar manipular os objetos do tipo set diretamente nesse exercício. Mas vale a pena saber pelo menos duas operações. Para percorrer os elementos de um objeto  S = {item1, item2, item3, ..., itemN} use:
+
+for elem in S:
+      print(elem)
+
+Em um conjunto (set) a ordem em que os objetos são percorridos no código acima é arbitrária, visto que ele representa uma coleção não ordenada de elementos. Para verificar se um elemento faz parte de um conjunto, use:
+
+if elem in S:
+    print(elem, "está no conjunto")
+else:
+    print(elem, "não está no conjunto")
+    
+
+Como exemplo de um dicionário de adjacência, considere o grafo G
+da imagem anterior. Sua representação é dada por:
+
+{
+ 0: {1},
+ 1: {0, 2, 3},
+ 2: {1},
+ 3: {1}
+}
+
+Compare a representação acima com a representação de um grafo como uma matriz densa. Quando você espera que a representação em dicionário será mais compacta que a representação em matriz? 
+6.3 Kami como um problema da teoria dos grafos
+
+Problemas de resolução de quebra-cabeças podem comumente serem descritos como problemas de transformação de grafos. Esse é o caso do jogo que estamos desenvolvendo. Para traduzir o problema do jogo em um problema de grafos, considere que cada região monocromática contígua é representada por um vértice e que dois vértices são conectados por uma aresta se e somente se as respectivas regiões "se tocam". Vamos assumir que cada vértice é um número natural 0,1,2,...
+codificando uma célula qualquer da região representada como (y−1)×(N−2)+(x−1), onde y denota a linha da célula, x denota a sua coluna e N denota o número de colunas da matriz (incluindo a moldura). Por exemplo, um vértice representando a região verde no tabuleiro abaixo por meio da célula E1 deve tomar o valor (1−1)×(5−1)+(5−1)=4
+
+. 
+
+
+Escolhendo uma célula qualquer para cada região e a representando usando a codificação descrita, podemos representar o tabuleiro acima pelo seguinte grafo (dicionário de adjacência):
+
+
+{
+
+   0: {4, 10},
+   4: {0, 14},
+  20: {10, 24},
+  24: {14, 20},
+  10: {0, 14, 20},
+  14: {4, 10, 24}
+
+}
+
+Cada vértice no grafo/dicionário é associado a uma única região do tabuleiro. Para obter a célula representativa a partir de um vértice v, revertemos as operações feitas, ou seja, calculamos célula y=v//(N-2)+1 e x=(v%(N-2))+1.  Por exemplo, o vértice 4 representa a região verde por meio da célula E1, porque y=4//(7-2)+1=1 e x=(4%(7-2))+1=5.  Note que no grafo quaisquer dois vizinhos representam regiões necessariamente de  cores distintas (por que?).  Note também que grafos distintos poderiam ser gerados escolhendo células diferentes como representantes de cada região.
+
+Se pintarmos de vermelho a região verde associada ao vértice 4 do grafo/dicionário descrito acima, o tabuleiro resultante fundirá essa região e as vizinhas em uma grande região vermelha. Já o grafo correspondente terá um único vértice representando a região vermelha resultante, agrupando os vértices 0, 4 e 14 do grafo atual em um único vértice, sendo representado como:
+
+{
+
+   4: {10, 24},
+  20: {10, 24},
+  24: {4, 20},
+  10: {4, 20}
+
+}
+
+Portanto, outra forma de obter o grafo resultante da ação de pintar uma região é atuar diretamente no grafo, modificando a cor do respectivo vértice no grafo e "contrair" qualquer aresta que conecte vértices vizinhos de mesma cor até que o grafo possua apenas vizinhos de cores distintas (a expressão contrair se refere a uma operação em que dois vértices são agrupados, conectando os vizinhos do primeiro ao segundo e depois excluindo o segundo vértice). Note que manipular o grafo é mais eficiente que manipular a matriz do tabuleiro, e abstrai detalhes irrelevantes para a resolução do problema como o tamanho de um região e sua posição absoluta. Para encontrarmos uma solução do problema (uma sequência de ações de pintar) precisamos portanto encontrar uma sequência de colorações de vértices que produza um grafo G
+
+com um único vértice, representando um tabuleiro monocromático. 
+
+Para simplificar a implementação do algoritmo, fornecemos duas funções prontas para manipular os grafos em nosso módulo util.py. A função gera_grafo recebe uma matriz densa representando o tabuleiro e devolve dois dicionários:
+
+    L: o dicionário de adjacência do grafo de regiões do tabuleiro onde as chaves codificam  posições de células da região como descrito; e
+    C: um dicionário contendo a cor da região representada por cada vértice.
+
+Por exemplo, quando chamamos a função com o tabuleiro 
+
+
+
+ela devolve os dicionários
+
+L: {0: {4, 10}, 4: {0, 14}, 20: {24, 10}, 24: {20, 14}, 10: {0, 20, 14}, 14: {4, 24, 10}}
+
+C: {0: 1, 4: 2, 20: 1, 24: 3, 10: 3, 14: 1}
+
+Em todos os dicionários acima, as chaves são os vértices do grafo (e portanto inteiros não-negativos). A função gera_grafo deve ser usada apenas pela função dica, que já é fornecida e não deve ser modificada; portanto você não deve usá-la no seu código. No entanto, os dicionários que ela devolve serão utilizadas mais para a frente.
+
+A segunda função fornecida para manipular grafos é a função pinta_vertice. Esta recebe os dicionários L e C, um vértice n do grafo representado por L e uma cor c, e devolve um novo grafo representado por novos dicionários Lp e Cp contendo, respectivamente, a representação do grafo obtido ao colorir n com a cor c e a coloração correspondente. Por exemplo, se chamarmos a função com os dicionários L e C acima,  para colorir o vértice n=4 com a cor c=1 ela devolverá os dicionários 
+
+Lp: {4: {24, 10}, 20: {24, 10}, 24: {20, 4}, 10: {20, 4}}
+
+Cp: {4: 1, 20: 1, 24: 3, 10: 3}
+
+representando o grafo obtido após a coloração do vértice 4 com a cor 1 e a coloração resultante. 
+
+6.4 Busca com retrocesso
+
+Para acharmos as ações que terminam o jogo dentro do número de ações disponíveis, usaremos a técnica chamada de busca com retrocesso. Você deve implementar uma função busca que recebe os dicionários L e C e o número de ações restantes. A função deve devolver uma ação a ser feita - ou seja, o vértice de uma célula e a cor a ser pintada - para vencer o jogo. Caso não haja uma solução possível dentro do número de ações disponíveis, a função deve devolver -1, -1.
+
+A busca por retrocesso segue a seguinte abordagem recursiva. O objetivo é manipular o grafo produzindo novos grafos até que o grafo resultante possua um único nó ou número de ações disponíveis seja negativo (quando detectamos uma falha). Portanto, o caso base (não recursivo) do algoritmo consiste em verificar se o número de ações é não-negativo e se o grafo possui apenas um nó. O primeiro caso deve retornar falha e o segundo deve retornar sucesso. Caso nenhuma dessas situações ocorram, o algoritmo deve verificar de forma recursiva se para cada vértice do grafo n
+e para cada cor disponível c, o grafo obtido ao colorir n com c
+
+torna o jogo solúvel. Essa operação deve ser realizada usando a função pinta_vertice, que como descrevemos devolve o grafo resultante e a respectiva coloração dos vértices na forma de dicionários. Um pseudo-código representando o procedimento descrito é mostrado abaixo.
+
+Função busca(L, C, A):
+     Se A < 0, devolva falha
+     Caso contrário, se L possuir apenas um nó n de cor c, devolva n, c
+     Se as condições acima não forem satisfeitas faça:
+        Para cada vértice n em L e cada cor c em C:
+            Seja L', C' o resultado de pinta_vertice(L,C,n,c)
+            Se busca(L', C', A-1) não for falha, devolva n, c
+     Se nenhum dos casos anteriores forem satisfeitos, devolva falha
+
+
+Atenção: A busca com retrocesso pode levar muito tempo e consumir muita memória em tabuleiros grandes com muitas cores (como o tabuleiro do arquivo tab04.txt). Recomendamos  não rodar a função quando o grafo tem muitos nós (> 10).
+
+Função principal
+
+A função main usa as funções anteriores para realizar o funcionamento descrito do programa: carregar um problema a partir de um arquivo de texto, cujo nome é fornecido pela jogadora, e implementar o mecanismo do jogo. Após carregar o tabuleiro (e antes de exibi-lo) deve-se exibir o grau de dificuldade, o número máximo de jogadas e as cores disponíveis. O programa então realiza as iterações do jogo. A cada iteração o programa pede a localização de uma célula cuja região deva ser pintada. A jogadora então digita uma ação no formato <letra><inteiro> <inteiro>   (por exemplo, F4 2) ou a palavra dica. Esta faz com que a função de mesmo nome seja usada para fornecer uma localização e uma cor de uma região a ser pintada, consumindo ações disponíveis e modificando o tabuleiro. Se a função  não encontra uma ação válida (e devolve 0,0,0), o programa deve exibir uma mensagem informando que não há ações válidas e terminar indicando que o problema não foi resolvido.  Caso a jogadora forneça uma localização e uma cor válidas, o programa deve pintar a região correspondente com a cor fornecida. A cor deve ser fornecida como um inteiro entre 1 e o número de cores disponíveis. Esses passos são repetidos até que o jogo termine por falta de ações, que a função seja chamada dica e retorne que não há ações válidas ou que o tabuleiro se torne  monocromático, indicando que o problema foi resolvido. Note que se a jogadora repetidamente executar a função dica a partir de um problema com solução (que é o caso para todos os tabuleiros dos arquivos fornecidos), o jogo necessariamente deve ser resolvido.
+
+Seguem alguns exemplos de execução do seu programa.
+ 
+
+
+
+
+Sua função main deve retornar o inteiro 1 se a jogadora ganhou o jogo (o problema foi resolvido), -1 se a função dica foi usada e indicou que não há ações válidas (e portanto a jogadora perdeu o jogo), e 0 se o número ações restantes se tornou zero e o tabuleiro não é monocromático. 
+
+Avisos
+Novamente, não se esqueçam que a discussão é saudável, o plágio não. NUNCA compartilhe código!
+
+Dica: é normal o autocorretor demorar até 10 segundos para executar todos os testes. Não é normal no entanto ele exceder 10 segundos; isso provavelmente indica um erro ou uma ineficiência grave do seu código.
+
+Este projeto é consideravelmente mais longo que o anterior. Recomendamos fortemente que comecem a fazer o exercício com antecedência e aproveitem as monitorias para tirar dúvidas!
